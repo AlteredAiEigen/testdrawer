@@ -8,6 +8,7 @@ const App = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('Not connected');
   const [bluetoothMacAddress, setBluetoothMacAddress] = useState<string>('');
   const [ipAddress, setIpAddress] = useState<string>('');
+  const [textToPrint, setTextToPrint] = useState<string>(''); // New state for text input
 
   useEffect(() => {
     // Check and request Bluetooth permissions when the app starts
@@ -150,6 +151,22 @@ const App = () => {
     });
   };
 
+  // Function to print the text
+  const printText = () => {
+    if (textToPrint.trim() === '') {
+      setConnectionStatus('Please enter some text to print');
+      return;
+    }
+
+    CalendarModule.printText(textToPrint, (error: string, result: string) => {
+      if (error) {
+        setConnectionStatus(`Error printing text: ${error}`);
+      } else {
+        setConnectionStatus(`Text printed: ${result}`);
+      }
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.statusText}>{connectionStatus}</Text>
@@ -184,6 +201,16 @@ const App = () => {
           keyboardType="numeric"
         />
         <Button title="Connect Network Printer" onPress={connectNetwork} />
+      </View>
+
+      <View style={styles.section}>
+        <TextInput
+          style={styles.input}
+          value={textToPrint}
+          onChangeText={setTextToPrint}
+          placeholder="Enter text to print"
+        />
+        <Button title="Print Text" onPress={printText} />
       </View>
 
       <View style={styles.section}>

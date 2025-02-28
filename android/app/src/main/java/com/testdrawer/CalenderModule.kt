@@ -201,4 +201,32 @@ class CalendarModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
             Log.e("CalendarModule", "Error during cleanup: ${e.message}")
         }
     }
+
+    // Print text to the printer (takes str as input)
+    @ReactMethod
+    fun printText(str: String, callback: Callback) {
+        try {
+            Log.d("CalendarModule", "starting to print: $str")
+            // Check if the printer is connected before printing
+            if (curConnect != null && isConnected) {
+                printer?.initializePrinter()
+                    ?.printString(str)
+                    ?.printText(
+                        "printText Demo\n",
+                        POSConst.ALIGNMENT_CENTER,
+                        POSConst.FNT_BOLD or POSConst.FNT_UNDERLINE,
+                        POSConst.TXT_1WIDTH or POSConst.TXT_2HEIGHT
+                    )
+                    ?.cutHalfAndFeed(1)
+
+                Log.d("CalendarModule", "Text printed successfully: $str")
+                callback.invoke(null, "Text printed successfully")
+            } else {
+                callback.invoke("Printer not connected", null)
+            }
+        } catch (e: Exception) {
+            Log.e("CalendarModule", "Error printing text: ${e.message}")
+            callback.invoke("Error printing text: ${e.message}", null)
+        }
+    }
 }
