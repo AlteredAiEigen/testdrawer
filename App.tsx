@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Text, View, NativeModules, TextInput, NativeEventEmitter, StyleSheet } from 'react-native';
+import { Button, Text, View, NativeModules, TextInput, NativeEventEmitter, StyleSheet, PermissionsAndroid, Alert } from 'react-native';
 
 const { CalendarModule } = NativeModules;
 const printerEmitter = new NativeEventEmitter(CalendarModule);
@@ -10,6 +10,37 @@ const App = () => {
   const [ipAddress, setIpAddress] = useState<string>('');
 
   useEffect(() => {
+    // Check and request Bluetooth permissions when the app starts
+    const requestBluetoothPermissions = async () => {
+      try {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+
+        // Check if all Bluetooth permissions are granted
+        if (
+          granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log('Bluetooth permissions granted');
+        } else {
+          // If any permission is denied, show an alert
+          Alert.alert(
+            'Permissions Required',
+            'This app requires Bluetooth permissions to function properly. Please enable Bluetooth and location permissions.',
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    };
+
+    requestBluetoothPermissions();
+
     // Set up event listeners for printer connection events
     const connectionSubscriptions = [
       printerEmitter.addListener('onPrinterConnected', (event) => {
@@ -44,7 +75,6 @@ const App = () => {
     };
   }, []);
 
-  // Check connection status
   const checkConnection = () => {
     CalendarModule.isConnected((error: string, connected: boolean) => {
       if (error) {
@@ -55,9 +85,8 @@ const App = () => {
     });
   };
 
-  // Open the cash drawer
   const openCashDrawer = () => {
-    const pin = 2; // Example PIN (2 or 5 typically)
+    const pin = 2;
     CalendarModule.openCashDrawer(pin, (error: string, result: string) => {
       if (error) {
         setConnectionStatus(`Error opening cash drawer: ${error}`);
@@ -67,9 +96,8 @@ const App = () => {
     });
   };
 
-  // Connect to a USB printer
   const connectUSB = () => {
-    const pathName = '/dev/usb/lp0'; // Example path for a USB printer
+    const pathName = '/dev/usb/lp0';
     setConnectionStatus('Connecting to USB printer...');
     CalendarModule.connectUSB(pathName, (error: string, result: string) => {
       if (error) {
@@ -80,7 +108,6 @@ const App = () => {
     });
   };
 
-  // Connect to Bluetooth Printer
   const connectBluetooth = () => {
     if (bluetoothMacAddress.trim() === '') {
       setConnectionStatus('Please enter a Bluetooth MAC address');
@@ -97,7 +124,6 @@ const App = () => {
     });
   };
 
-  // Connect to Network Printer
   const connectNetwork = () => {
     if (ipAddress.trim() === '') {
       setConnectionStatus('Please enter an IP address');
@@ -114,7 +140,6 @@ const App = () => {
     });
   };
 
-  // Close connection
   const closeConnection = () => {
     CalendarModule.closeConnection((error: string, result: string) => {
       if (error) {
@@ -137,7 +162,7 @@ const App = () => {
       <View style={styles.section}>
         <Button title="Connect USB Printer" onPress={connectUSB} />
       </View>
-      
+
       <View style={styles.section}>
         <Text>Bluetooth MAC Address:</Text>
         <TextInput
